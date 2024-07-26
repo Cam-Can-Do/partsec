@@ -1,15 +1,16 @@
-use std::process::Command;
 use clap::Parser;
+use std::fs;
 use std::io::{self, Write};
+use std::process::Command;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    #[arg(short, long, default_value = "")]
-    volume: String,
-
     #[arg(long, default_value = "")]
     partition: String,
+
+    #[arg(long, default_value = "")]
+    volume: String,
 
     #[arg(long, default_value = "")]
     password: String,
@@ -18,7 +19,7 @@ struct Args {
     pim: u32,
 
     #[arg(short, long, default_value = "")]
-    keyfile: String,
+    keyfiles: String,
 }
 
 fn main() {
@@ -32,7 +33,7 @@ fn main() {
         io::stdin().read_line(&mut volume).unwrap();
         args.volume = volume.trim().to_string();
     }
-    
+
     if args.partition.is_empty() {
         println!("Partition is required");
         print!("Partition: ");
@@ -63,32 +64,40 @@ fn main() {
         }
     }
 
-    if args.keyfile.is_empty() {
+    if args.keyfiles.is_empty() {
         println!("Keyfile is required");
         print!("Keyfile: ");
         std::io::stdout().flush().unwrap();
         let mut keyfile = String::new();
         io::stdin().read_line(&mut keyfile).unwrap();
-        args.keyfile = keyfile.trim().to_string();
+        args.keyfiles = keyfile.trim().to_string();
     }
-    
+
+
+    /*
     println!("The volume is: '{}'", args.volume);
     println!("The partition is: '{}'", args.partition);
     println!("The password is: '{}'", args.password);
     println!("The PIM is: '{}'", args.pim);
-    println!("The keyfile is: '{}'", args.keyfile);
+    println!("The keyfile is: '{}'", args.keyfiles);
+    */
 
-    let output = Command::new("veracrypt")
+    match fs::create_dir(&args.volume) {
+        Err(why) => println!("! {:?}", why.kind()),
+        Ok(_) => {}
+    }
+
+    let _output = Command::new("veracrypt")
         .arg("--text")
         .arg("--mount")
-        .arg(args.volume)
         .arg(args.partition)
+        .arg(args.volume)
         .arg("-p")
         .arg(args.password)
         .arg("--pim")
         .arg(args.pim.to_string())
         .arg("--keyfiles")
-        .arg(args.keyfile)
+        .arg(args.keyfiles)
         .arg("--protect-hidden")
         .arg("no")
         .spawn()
